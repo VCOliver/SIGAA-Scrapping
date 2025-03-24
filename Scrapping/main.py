@@ -23,7 +23,7 @@ if __name__ == "__main__":
     Main entry point for the SIGAAMOS bot application.
     Initializes the database and bot, registers handlers, and starts the bot.
     """
-    db_handler = Database('avisos.db')
+    db_handler = Database('sqlite:///avisos.db')
     bot = SIGAAMOS_bot(TOKEN, db_handler).use_default_handlers()
     bot.register_handlers()
     bot.run()
