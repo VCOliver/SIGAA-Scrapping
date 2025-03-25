@@ -10,16 +10,11 @@ class SIGAA_Scraper:
     def __init__(self):
        self.driver: Final = webdriver.Firefox()
         
-    def login(self, username:str, password: str):
+    def access_portal(self):
+        wait = WebDriverWait(self.driver, 15)
         try:
-            self.driver.get("https://autenticacao.unb.br/")
+            self.driver.get("https://sigaa.unb.br/sigaa/public/turmas/listar.jsf")
             
-            wait = WebDriverWait(self.driver, 15)
-            username_input = wait.until(EC.presence_of_element_located((By.XPATH, "//*[@id='username']")))
-            username_input.send_keys("211031842")
-            password_input = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="password"]')))
-            password_input.send_keys("REDACTED")
-            password_input.submit()       
         except Exception as e:
             print(e)
             self.quit()
@@ -38,6 +33,6 @@ class SIGAA_Scraper:
 
 if __name__=="__main__":
     scraper = SIGAA_Scraper()
-    scraper.login("211031842", "REDACTED")
+    scraper.access_portal()
     scraper.wait(5)
     scraper.quit()

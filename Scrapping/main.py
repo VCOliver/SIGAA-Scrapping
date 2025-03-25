@@ -13,17 +13,17 @@ else:
 from typing import Final
 
 TOKEN: Final = os.getenv("BOT_TOKEN")
+USERNAME: Final = os.getenv("SIGAA_USERNAME")
+PASSWORD: Final = os.getenv("SIGAA_PASSWORD")
 print(TOKEN)
 
 from Telegram.telegram_bot import SIGAAMOS_bot
 from Database import Database
+from SIGAA.scrapping import SIGAA_Scraper
 
 if __name__ == "__main__":
-    """
-    Main entry point for the SIGAAMOS bot application.
-    Initializes the database and bot, registers handlers, and starts the bot.
-    """
-    db_handler = Database('sqlite:///avisos.db')
-    bot = SIGAAMOS_bot(TOKEN, db_handler).use_default_handlers()
-    bot.register_handlers()
-    bot.run()
+    scraper = SIGAA_Scraper()
+    scraper.login(USERNAME, PASSWORD)
+    scraper.access_portal()
+    scraper.wait(5)
+    scraper.quit()
