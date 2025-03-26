@@ -136,11 +136,3 @@ class SIGAA_Scraper:
         import sys
         sys.exit(1)
         
-        
-
-if __name__=="__main__":
-    scraper = SIGAA_Scraper()
-    scraper.access_portal()
-    scraper.access_classes()
-    scraper.update_classes_info()
-    scraper.quit()

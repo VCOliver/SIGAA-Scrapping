@@ -26,8 +26,6 @@ if __name__ == "__main__":
     data = scraper.update_classes_info(True)
     db = Database()
     db.create(data)
-    _, classSession = db.sessions
-    filter = Filter(classSession)
-    df = filter.filter()
+    df = db.filter()
     print(df.head())
     scraper.quit()

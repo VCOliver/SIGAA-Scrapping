@@ -154,7 +154,27 @@ class Database:
         finally:
             session.close()
             
-    def filter(self, by='availability') -> pd.DataFrame:
+    def filter(self, by: str='availability') -> pd.DataFrame:
+        """
+        Filters and retrieves class information from the database based on the specified criteria.
+        Args:
+            by (str, optional): The filtering criterion. Defaults to 'availability'.
+                - 'availability': Filters by available spots and excludes 'offered_spots' and 'occupied_spots' columns.
+                - 'occupied': Filters by occupied spots and excludes 'offered_spots' and 'available_spots' columns.
+                - 'offered': Filters by offered spots and excludes 'available_spots' and 'occupied_spots' columns.
+        Returns:
+            pd.DataFrame: A Pandas DataFrame containing the filtered class information with the following columns:
+                - subject: The name of the subject.
+                - code: The code of the class.
+                - num: The class number.
+                - period: The year and period of the class.
+                - professor: The name of the professor teaching the class.
+                - schedule: The schedule of the class.
+                - available_spots/offered_spots/occupied_spots: The number of spots based on the filter.
+                - local: The location of the class.
+        Raises:
+            Exception: Prints the exception message if an error occurs during the query or data processing.
+        """
         session = self._classSession()
         df = pd.DataFrame()
         
@@ -175,7 +195,7 @@ class Database:
                     "period": class_info.ano_periodo,
                     "professor": class_info.docente,
                     "schedule": class_info.horario,
-                    "ofered_spots": class_info.vagas_ofertadas,
+                    "offered_spots": class_info.vagas_ofertadas,
                     "occupied_spots": class_info.vagas_ocupadas,
                     "available_spots": class_info.vagas_disponiveis,
                     "local": class_info.local,
@@ -186,7 +206,11 @@ class Database:
             # Convert the data to a Pandas DataFrame
             df = pd.DataFrame(data)
             if by=='availability':
-                df.drop(columns=["num", "ofered_spots", "occupied_spots"], inplace=True)
+                df.drop(columns=["offered_spots", "occupied_spots"], inplace=True)
+            if by=='occupied':
+                df.drop(columns=['offered_spots', 'available_spots'], inplace=True)
+            if by=='offered':
+                df.drop(columns=['available_spots', 'occupied_spots'], inplace=True)
         except Exception as e:
             print(e)
         finally:
