@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import IntegrityError
+import pandas as pd
 
 from .models import Base, Chat, Item, Subject, Class_info
 
@@ -152,6 +153,44 @@ class Database:
             session.rollback()
         finally:
             session.close()
+            
+    def filter(self, by='availability') -> pd.DataFrame:
+        session = self._classSession()
+        df = pd.DataFrame()
+        
+        try:
+            # Query the database to join Class_info and Subject tables
+            query = (
+                session.query(Class_info, Subject)
+                .join(Subject, Class_info.codigo == Subject.codigo)
+                .filter(Class_info.vagas_disponiveis > 0)
+            )
+            
+            # Convert the query results to a list of dictionaries
+            data = [
+                {
+                    "subject": subject.subject,
+                    "code": class_info.codigo,
+                    "num": class_info.N_o,
+                    "period": class_info.ano_periodo,
+                    "professor": class_info.docente,
+                    "schedule": class_info.horario,
+                    "ofered_spots": class_info.vagas_ofertadas,
+                    "occupied_spots": class_info.vagas_ocupadas,
+                    "available_spots": class_info.vagas_disponiveis,
+                    "local": class_info.local,
+                }
+                for class_info, subject in query
+            ]
+
+            # Convert the data to a Pandas DataFrame
+            df = pd.DataFrame(data)
+            if by=='availability':
+                df.drop(columns=["num", "ofered_spots", "occupied_spots"], inplace=True)
+        except Exception as e:
+            print(e)
+        finally:
+            return df
             
     @property
     def sessions(self) -> tuple[sessionmaker[Session], sessionmaker[Session]]:
