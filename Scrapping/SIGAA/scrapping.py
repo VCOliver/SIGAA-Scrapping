@@ -54,8 +54,9 @@ class SIGAA_Scraper:
             print(f"Element not found: {str(e)}")
             self._terminate()
     
-    def update_classes_info(self):
-        wait = WebDriverWait(self.driver, 15)
+    def update_classes_info(self, save_in_file=False) -> list[dict]:
+        wait = WebDriverWait(self.driver, 20)
+        print("Searching on SIGAA...", end='')
         
         try:
             # Find all rows in the table body
@@ -69,6 +70,7 @@ class SIGAA_Scraper:
         data = []
         subject_code = subject_name = None
 
+        count = 0
         for row in rows:
             # Get the class attribute to check row type
             row_class = row.get_attribute("class")
@@ -93,6 +95,7 @@ class SIGAA_Scraper:
                 # horario_extra = cells[4].text.strip()
                 vagas_ofertadas = cells[5].text.strip()
                 vagas_ocupadas = cells[6].text.strip()
+                vagas_disponiveis = int(vagas_ofertadas) - int(vagas_ocupadas)
                 local = cells[7].text.strip()
                 
                 # Append the information as a new record in our data list.
@@ -105,13 +108,22 @@ class SIGAA_Scraper:
                     "Horário": horario,
                     "Qtde Vagas Ofertadas": vagas_ofertadas,
                     "Qtde Vagas Ocupadas": vagas_ocupadas,
+                    "Qtde Vagas Disponíveis": vagas_disponiveis,
                     "Local": local
                 })
-                
-                # Create the DataFrame
-        df = pd.DataFrame(data)
-        df.to_csv('classes_info.csv', index=False)
-        print(df.head(10))
+                count+=1
+                if count%10 == 0:
+                    print('.', end='')
+        print('\nDone!')
+        
+        if save_in_file:     
+            # Create the DataFrame
+            df = pd.DataFrame(data)
+            file_name = 'classes_info.csv'
+            df.to_csv(file_name, index=False)
+            print(f"Saved data in {file_name}")
+            
+        return data
     
     @staticmethod
     def wait(secs) -> None:

@@ -13,8 +13,6 @@ else:
 from typing import Final
 
 TOKEN: Final = os.getenv("BOT_TOKEN")
-USERNAME: Final = os.getenv("SIGAA_USERNAME")
-PASSWORD: Final = os.getenv("SIGAA_PASSWORD")
 print(TOKEN)
 
 from Telegram.telegram_bot import SIGAAMOS_bot
@@ -23,7 +21,10 @@ from SIGAA.scrapping import SIGAA_Scraper
 
 if __name__ == "__main__":
     scraper = SIGAA_Scraper()
-    scraper.login(USERNAME, PASSWORD)
     scraper.access_portal()
-    scraper.wait(5)
+    scraper.access_classes()
+    data = scraper.update_classes_info(True)
+    
+    db = Database()
+    db.create(data)
     scraper.quit()
