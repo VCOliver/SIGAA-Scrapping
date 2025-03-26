@@ -17,14 +17,17 @@ print(TOKEN)
 
 from Telegram.telegram_bot import SIGAAMOS_bot
 from Database import Database
-from SIGAA.scrapping import SIGAA_Scraper
+from SIGAA.scrapping import SIGAA_Scraper, Filter
 
 if __name__ == "__main__":
     scraper = SIGAA_Scraper()
     scraper.access_portal()
     scraper.access_classes()
     data = scraper.update_classes_info(True)
-    
     db = Database()
     db.create(data)
+    _, classSession = db.sessions
+    filter = Filter(classSession)
+    df = filter.filter()
+    print(df.head())
     scraper.quit()

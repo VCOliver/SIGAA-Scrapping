@@ -135,6 +135,57 @@ class SIGAA_Scraper:
     def _terminate(self):
         import sys
         sys.exit(1)
+        
+        
+from Database import Class_info, Subject
+
+class Filter:
+    from sqlalchemy.orm import sessionmaker
+    
+    def __init__(self, session: sessionmaker) -> None:
+        self.Session = session
+        
+    def filter(self, by='availability') -> pd.DataFrame:
+        session = self.Session()
+        df = pd.DataFrame()
+        try:
+            # Query the database to join Class_info and Subject tables
+            query = (
+                session.query(Class_info, Subject)
+                .join(Subject, Class_info.codigo == Subject.codigo)
+                .filter(Class_info.vagas_disponiveis > 0)
+            )
+
+            # Convert the query results to a list of dictionaries
+            data = [
+                {
+                    "Matéria": subject.subject,
+                    "Código": class_info.codigo,
+                    "N_o": class_info.N_o,
+                    "Ano-Período": class_info.ano_periodo,
+                    "Docente": class_info.docente,
+                    "Horário": class_info.horario,
+                    "Vagas Ofertadas": class_info.vagas_ofertadas,
+                    "Vagas Ocupadas": class_info.vagas_ocupadas,
+                    "Vagas Disponíveis": class_info.vagas_disponiveis,
+                    "Local": class_info.local,
+                }
+                for class_info, subject in query
+            ]
+
+            # Convert the data to a Pandas DataFrame
+            df = pd.DataFrame(data)
+            df.drop(columns=["N_o", "Vagas Ofertadas", "Vagas Disponíveis"], inplace=True)
+            df = df[df["Matéria"].str.contains("ESTRUTURAS", na=False)]
+            
+             # Print the filtered DataFrame
+            if df.empty:
+                print("Nenhuma turma com vagas disponíveis foi encontrada.")
+        except Exception as e:
+            print(e)
+        finally:
+            session.close()
+            return df
 
 if __name__=="__main__":
     scraper = SIGAA_Scraper()

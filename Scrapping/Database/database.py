@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import IntegrityError
 
 from .models import Base, Chat, Item, Subject, Class_info
@@ -19,12 +19,12 @@ class Database:
         This method sets up two SQLite databases: one for user-related data (chats and items)
         and another for class-related data (subjects and class information).
         """
-        self.user_engine = create_engine(self.USER_DB)
-        self.class_engine = create_engine(self.CLASSES_DB)
-        Base.metadata.create_all(self.user_engine)
-        Base.metadata.create_all(self.class_engine)
-        self.userSession = sessionmaker(bind=self.user_engine)
-        self.classSession = sessionmaker(bind=self.class_engine)
+        self._user_engine = create_engine(self.USER_DB)
+        self._class_engine = create_engine(self.CLASSES_DB)
+        Base.metadata.create_all(self._user_engine)
+        Base.metadata.create_all(self._class_engine)
+        self._userSession = sessionmaker(bind=self._user_engine)
+        self._classSession = sessionmaker(bind=self._class_engine)
         
     def create(self, data: list[dict]) -> Self:
         from pathlib import Path
@@ -36,9 +36,6 @@ class Database:
         """
         user_db_path = Path(self.USER_DB.replace("sqlite:///", ""))
         classes_db_path = Path(self.CLASSES_DB.replace("sqlite:///", ""))
-        
-        if user_db_path.exists() and classes_db_path.exists():
-            return self
         
         try:
             for class_info in data:
@@ -53,6 +50,7 @@ class Database:
             print(e)
         finally:
             self.close()
+            return self
             
 
     def add_chat(self, chat_id):
@@ -61,7 +59,7 @@ class Database:
         
         :param chat_id: ID of the chat to be added.
         """
-        session = self.userSession()
+        session = self._userSession()
         chat = Chat(chat_id=chat_id)
         session.add(chat)
         session.commit()
@@ -74,7 +72,7 @@ class Database:
         :param chat_id: ID of the chat to which the item is linked.
         :param item_data: Data of the item to be added.
         """
-        session = self.userSession()
+        session = self._userSession()
         item = Item(chat_id=chat_id, item_data=item_data)
         session.add(item)
         session.commit()
@@ -103,7 +101,7 @@ class Database:
         :param name: Name of the subject.
         :param code: Unique code of the subject.
         """
-        session = self.classSession()
+        session = self._classSession()
         try:
             # Attempt to add the subject directly
             subject = Subject(subject=name, codigo=code)
@@ -137,7 +135,7 @@ class Database:
             except ValueError:
                 raise ValueError("offered_vacancies, occupied_vacancies, and available_vacancies must be integers.")
         
-        session = self.classSession()
+        session = self._classSession()
         try:
             class_info = Class_info(codigo=subject_code, 
                                     N_o=class_number,
@@ -154,6 +152,17 @@ class Database:
             session.rollback()
         finally:
             session.close()
+            
+    @property
+    def sessions(self) -> tuple[sessionmaker[Session], sessionmaker[Session]]:
+        """
+        Provides access to the sessionmakers for user and class sessions.
+
+        Returns:
+            tuple[sessionmaker[Session], sessionmaker[Session]]: A tuple containing
+            the sessionmaker instances for user and class sessions, respectifully.
+        """
+        return self._userSession, self._classSession
         
     def close(self):
         """
@@ -161,5 +170,5 @@ class Database:
         
         This method disposes of the engines for both the user and classes databases.
         """
-        self.user_engine.dispose()
-        self.class_engine.dispose()
+        self._user_engine.dispose()
+        self._class_engine.dispose()
