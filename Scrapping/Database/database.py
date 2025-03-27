@@ -317,3 +317,20 @@ class Database:
             print(f"Error updating classes: {e}")
         finally:
             session.close()
+
+    def get_watched_items(self) -> list[tuple[int, str]]:
+        """
+        Retrieve all watched items and their associated chat IDs.
+
+        Returns:
+            list[tuple[int, str]]: A list of tuples containing chat IDs and subject codes.
+        """
+        session = self._userSession()
+        try:
+            query = session.query(Item.chat_id, Item.item_data).all()
+            return [(chat_id, item_data) for chat_id, item_data in query]
+        except Exception as e:
+            print(f"Error retrieving watched items: {e}")
+            return []
+        finally:
+            session.close()
