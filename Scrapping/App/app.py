@@ -1,9 +1,13 @@
-
 # Starting app logic
 from Telegram.telegram_bot import SIGAAMOS_bot
 from Database.database import Database
 from SIGAA.scrapping import SIGAA_Scraper
 import pandas as pd
+
+import threading
+import time
+from datetime import datetime
+import asyncio  # Added for event loop management
 
 class App:
     """
@@ -16,6 +20,20 @@ class App:
         """
         self.__scraper = SIGAA_Scraper()
         self.__db = Database()
+        self._stop_event = threading.Event()  # Event to signal threads to stop
+        
+    def setup(self, TOKEN: str):
+        self.scrape()
+        self.set_database()
+        self.start_bot(TOKEN)
+        
+    def run(self):
+        """
+        Starts the scraper in a separate thread and runs the bot in the main thread.
+        """
+        self.scraper_thread = threading.Thread(target=self.run_scraper, daemon=False)
+        self.scraper_thread.start()
+        self.run_bot()  # Run the bot in the main thread
         
     def scrape(self) -> None:
         """
@@ -25,6 +43,26 @@ class App:
         self.__scraper.access_portal()
         self.__scraper.access_classes()
         self._data = self.__scraper.update_classes_info(True)
+        
+    def run_scraper(self):
+        """
+        Runs the scraper in a loop until the stop event is set.
+        """
+        while not self._stop_event.is_set():  # Loop until stop event is set
+            try:
+                self.scrape()
+                self.__db.update_classes(self._data)
+                print(f"Database updated at {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+            except Exception as e:
+                print(f"Scraper encountered an error: {e}")
+                # Restart WebDriver if necessary
+                self.__scraper.quit()
+                self.__scraper = SIGAA_Scraper()
+            finally:
+                for _ in range(10 * 60):  # Sleep for 10 minutes in 1-second intervals
+                    if self._stop_event.is_set():
+                        break
+                    time.sleep(1)
         
     def set_database(self) -> None:
         """
@@ -63,8 +101,19 @@ class App:
         self.bot = bot
         
     def run_bot(self) -> None:
-        self.bot.run()
+        """
+        Runs the bot in the main thread.
+        """
+        try:
+            asyncio.run(self.bot.run())  # Use asyncio.run to execute the bot's coroutine
+        except Exception as e:
+            print(f"Bot encountered an error: {e}")
 
     def close(self) -> None:
+        """
+        Signals threads to stop and waits for them to finish.
+        """
+        self._stop_event.set()  # Signal threads to stop
+        self.scraper_thread.join(timeout=5)  # Wait for scraper thread to finish with timeout
         self.__scraper.quit()
         self.__db.close()

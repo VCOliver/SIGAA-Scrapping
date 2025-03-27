@@ -19,8 +19,7 @@ from App import App
 
 if __name__ == "__main__":
     app = App()
-    app.scrape()
-    app.set_database()
-    app.start_bot(TOKEN)
-    app.run_bot()
+    app.setup(TOKEN)
+    app.run()
     app.close()
+    

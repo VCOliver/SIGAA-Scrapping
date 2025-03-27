@@ -60,7 +60,7 @@ class SIGAAMOS_bot:
         """
         query = ' '.join(context.args)
         if not query:
-            await update.message.reply_text("Por favor, forneça o código da matéria para buscar.")
+            await update.message.reply_text("Por favor, use /search <código da matéria>.")
             return
 
         # Query the database for the subject code
@@ -79,7 +79,13 @@ class SIGAAMOS_bot:
             response = f"Nenhuma sala de {query} encontrada com vagas disponíveis."
             
         else:
-            response = filtered_result.to_string(index=False)
+            response = ""
+            for _, row in filtered_result.iterrows():
+                response += (
+                    f"{row['available_spots']} vagas encontradas para {row['subject']} turma {row['num']} "
+                    f"com {row['professor']} no horário {row['schedule']} "
+                    f"{row['local']} para o semestre {row['period']}.\n\n"
+                )
 
         await update.message.reply_text(response)
         
