@@ -317,3 +317,43 @@ class Database:
             print(f"Error updating classes: {e}")
         finally:
             session.close()
+
+    def get_watched_items(self) -> list[tuple[int, str]]:
+        """
+        Retrieve all watched items and their associated chat IDs.
+
+        Returns:
+            list[tuple[int, str]]: A list of tuples containing chat IDs and subject codes.
+        """
+        session = self._userSession()
+        try:
+            query = session.query(Item.chat_id, Item.item_data).all()
+            return [(chat_id, item_data) for chat_id, item_data in query]
+        except Exception as e:
+            print(f"Error retrieving watched items: {e}")
+            return []
+        finally:
+            session.close()
+
+    def remove_item(self, chat_id: int, subject_code: str) -> None:
+        """
+        Remove an item associated with a chat_id and subject_code from the database.
+
+        Args:
+            chat_id (int): The ID of the chat.
+            subject_code (str): The code of the subject to remove.
+        """
+        session = self._userSession()
+        try:
+            item = session.query(Item).join(Chat).filter(
+                Chat.chat_id == chat_id,
+                Item.item_data == subject_code
+            ).first()
+            if item:
+                session.delete(item)
+                session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error removing item: {e}")
+        finally:
+            session.close()

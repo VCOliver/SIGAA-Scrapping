@@ -48,11 +48,16 @@ class App:
         """
         Runs the scraper in a loop until the stop event is set.
         """
+        # Create and set an event loop for this thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
         while not self._stop_event.is_set():  # Loop until stop event is set
             try:
                 self.scrape()
                 self.__db.update_classes(self._data)
                 print(f"Database updated at {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+                loop.run_until_complete(self.bot._notify_users())  # Run the coroutine in the thread's event loop
             except Exception as e:
                 print(f"Scraper encountered an error: {e}")
                 # Restart WebDriver if necessary
@@ -63,6 +68,9 @@ class App:
                     if self._stop_event.is_set():
                         break
                     time.sleep(1)
+
+        # Close the event loop when the thread stops
+        loop.close()
         
     def set_database(self) -> None:
         """
