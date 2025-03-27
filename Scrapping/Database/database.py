@@ -264,3 +264,56 @@ class Database:
         """
         self._user_engine.dispose()
         self._class_engine.dispose()
+
+    def update_classes(self, data: list[dict]):
+        """
+        Update the classes data in the database based on the provided data.
+
+        :param data: List of dictionaries containing the updated class information.
+        """
+        session = self._classSession()
+        try:
+            for class_info in data:
+                # Update or insert the subject
+                subject = session.query(Subject).filter_by(codigo=class_info["Código"]).first()
+                if not subject:
+                    subject = Subject(subject=class_info["Matéria"], codigo=class_info["Código"])
+                    session.add(subject)
+                    session.commit()
+
+                # Update or insert the class information
+                class_record = session.query(Class_info).filter_by(
+                    codigo=class_info["Código"],
+                    N_o=class_info["N_o"],
+                    ano_periodo=class_info["Ano-Período"],
+                    docente=class_info["Docente"],
+                    horario=class_info["Horário"]
+                ).first()
+
+                if class_record:
+                    # Update existing record
+                    class_record.vagas_ofertadas = class_info["Qtde Vagas Ofertadas"]
+                    class_record.vagas_ocupadas = class_info["Qtde Vagas Ocupadas"]
+                    class_record.vagas_disponiveis = class_info["Qtde Vagas Disponíveis"]
+                    class_record.local = class_info["Local"]
+                else:
+                    # Insert new record
+                    new_class = Class_info(
+                        codigo=class_info["Código"],
+                        N_o=class_info["N_o"],
+                        ano_periodo=class_info["Ano-Período"],
+                        docente=class_info["Docente"],
+                        horario=class_info["Horário"],
+                        vagas_ofertadas=class_info["Qtde Vagas Ofertadas"],
+                        vagas_ocupadas=class_info["Qtde Vagas Ocupadas"],
+                        vagas_disponiveis=class_info["Qtde Vagas Disponíveis"],
+                        local=class_info["Local"]
+                    )
+                    session.add(new_class)
+
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error updating classes: {e}")
+        finally:
+            session.close()
