@@ -1,19 +1,3 @@
-import os
-from pathlib import Path
-
-# Handling .env file
-parent_dir = Path(__file__).resolve().parent.parent
-dotenv_path = os.path.join(parent_dir, '.env')
-if os.path.exists(dotenv_path):
-    from dotenv import load_dotenv
-    load_dotenv(dotenv_path)
-else:
-    raise FileNotFoundError(f"File {dotenv_path} not found")
-
-from typing import Final
-
-TOKEN: Final = os.getenv("BOT_TOKEN")
-print(TOKEN)
 
 # Starting app logic
 from Telegram.telegram_bot import SIGAAMOS_bot
@@ -50,6 +34,7 @@ class App:
         
     def get_data(self, filter_by='availability') -> pd.DataFrame:
         """
+        FOR TESTS!
         Retrieves filtered data from the database.
 
         Args:
@@ -63,6 +48,7 @@ class App:
     
     def print_class(self, code: str, /) -> None:
         """
+        FOR TESTS!
         Prints the details of a specific class based on its code.
 
         Args:
@@ -70,6 +56,14 @@ class App:
         """
         df = self.df[self.df['code'] == code]
         print(df)
+        
+    def start_bot(self, TOKEN: str) -> None:
+        bot = SIGAAMOS_bot(TOKEN, self.__db).use_default_handlers()
+        bot.register_handlers()
+        self.bot = bot
+        
+    def run_bot(self) -> None:
+        self.bot.run()
 
     def close(self) -> None:
         self.__scraper.quit()

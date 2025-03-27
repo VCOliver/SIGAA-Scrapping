@@ -154,7 +154,7 @@ class Database:
         finally:
             session.close()
             
-    def filter(self, by: str='availability') -> pd.DataFrame:
+    def filter(self, by: str = 'availability') -> pd.DataFrame:
         """
         Filters and retrieves class information from the database based on the specified criteria.
         Args:
@@ -175,17 +175,51 @@ class Database:
         Raises:
             Exception: Prints the exception message if an error occurs during the query or data processing.
         """
+        try:
+            # Retrieve all data using get_df
+            df = self.get_df()
+
+            # Drop columns based on the filter criterion
+            if by == 'availability':
+                df = df[df["available_spots"] > 0]
+                df.drop(columns=["offered_spots", "occupied_spots"], inplace=True)
+            elif by == 'occupied':
+                df.drop(columns=["offered_spots", "available_spots"], inplace=True)
+            elif by == 'offered':
+                df.drop(columns=["available_spots", "occupied_spots"], inplace=True)                
+
+            return df
+        except Exception as e:
+            print(e)
+            return pd.DataFrame()
+            
+    def get_df(self) -> pd.DataFrame:
+        """
+        Queries the database and returns all class information as a Pandas DataFrame.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing all class information with the following columns:
+                - subject: The name of the subject.
+                - code: The code of the class.
+                - num: The class number.
+                - period: The year and period of the class.
+                - professor: The name of the professor teaching the class.
+                - schedule: The schedule of the class.
+                - offered_spots: The total number of offered spots.
+                - occupied_spots: The number of occupied spots.
+                - available_spots: The number of available spots.
+                - local: The location of the class.
+        """
         session = self._classSession()
         df = pd.DataFrame()
-        
+
         try:
             # Query the database to join Class_info and Subject tables
             query = (
                 session.query(Class_info, Subject)
                 .join(Subject, Class_info.codigo == Subject.codigo)
-                .filter(Class_info.vagas_disponiveis > 0)
             )
-            
+
             # Convert the query results to a list of dictionaries
             data = [
                 {
@@ -205,17 +239,12 @@ class Database:
 
             # Convert the data to a Pandas DataFrame
             df = pd.DataFrame(data)
-            if by=='availability':
-                df.drop(columns=["offered_spots", "occupied_spots"], inplace=True)
-            if by=='occupied':
-                df.drop(columns=['offered_spots', 'available_spots'], inplace=True)
-            if by=='offered':
-                df.drop(columns=['available_spots', 'occupied_spots'], inplace=True)
         except Exception as e:
             print(e)
         finally:
+            session.close()
             return df
-            
+
     @property
     def sessions(self) -> tuple[sessionmaker[Session], sessionmaker[Session]]:
         """

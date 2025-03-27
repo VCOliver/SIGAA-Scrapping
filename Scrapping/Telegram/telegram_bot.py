@@ -59,7 +59,29 @@ class SIGAAMOS_bot:
         :param context: Context instance.
         """
         query = ' '.join(context.args)
-        await update.message.reply_text(f"Procurando por {query}")
+        if not query:
+            await update.message.reply_text("Por favor, forneça o código da matéria para buscar.")
+            return
+
+        # Query the database for the subject code
+        result = self.db.get_df()
+        if query not in result['code'].values:
+            await update.message.reply_text(
+            "Nenhuma matéria com esse código foi encontrada."
+            "Por favor, confira se o código foi escrito corretamente.\n\n"
+            "Por enquanto, sou capaz apenas de pesquisar por classes na FCTE do Gama."
+            )
+            return
+        result = self.db.filter(by='availability')
+        filtered_result = result[result['code'] == query]
+
+        if filtered_result.empty:
+            response = f"Nenhuma sala de {query} encontrada com vagas disponíveis."
+            
+        else:
+            response = filtered_result.to_string(index=False)
+
+        await update.message.reply_text(response)
         
     def _save_warning(self, chat_id: int, item: str):
         """
