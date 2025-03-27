@@ -154,7 +154,7 @@ class Database:
         finally:
             session.close()
             
-    def filter(self, by: str='availability') -> pd.DataFrame:
+    def filter(self, by: str = 'availability') -> pd.DataFrame:
         """
         Filters and retrieves class information from the database based on the specified criteria.
         Args:
@@ -175,17 +175,51 @@ class Database:
         Raises:
             Exception: Prints the exception message if an error occurs during the query or data processing.
         """
+        try:
+            # Retrieve all data using get_df
+            df = self.get_df()
+
+            # Drop columns based on the filter criterion
+            if by == 'availability':
+                df = df[df["available_spots"] > 0]
+                df.drop(columns=["offered_spots", "occupied_spots"], inplace=True)
+            elif by == 'occupied':
+                df.drop(columns=["offered_spots", "available_spots"], inplace=True)
+            elif by == 'offered':
+                df.drop(columns=["available_spots", "occupied_spots"], inplace=True)                
+
+            return df
+        except Exception as e:
+            print(e)
+            return pd.DataFrame()
+            
+    def get_df(self) -> pd.DataFrame:
+        """
+        Queries the database and returns all class information as a Pandas DataFrame.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing all class information with the following columns:
+                - subject: The name of the subject.
+                - code: The code of the class.
+                - num: The class number.
+                - period: The year and period of the class.
+                - professor: The name of the professor teaching the class.
+                - schedule: The schedule of the class.
+                - offered_spots: The total number of offered spots.
+                - occupied_spots: The number of occupied spots.
+                - available_spots: The number of available spots.
+                - local: The location of the class.
+        """
         session = self._classSession()
         df = pd.DataFrame()
-        
+
         try:
             # Query the database to join Class_info and Subject tables
             query = (
                 session.query(Class_info, Subject)
                 .join(Subject, Class_info.codigo == Subject.codigo)
-                .filter(Class_info.vagas_disponiveis > 0)
             )
-            
+
             # Convert the query results to a list of dictionaries
             data = [
                 {
@@ -205,17 +239,12 @@ class Database:
 
             # Convert the data to a Pandas DataFrame
             df = pd.DataFrame(data)
-            if by=='availability':
-                df.drop(columns=["offered_spots", "occupied_spots"], inplace=True)
-            if by=='occupied':
-                df.drop(columns=['offered_spots', 'available_spots'], inplace=True)
-            if by=='offered':
-                df.drop(columns=['available_spots', 'occupied_spots'], inplace=True)
         except Exception as e:
             print(e)
         finally:
+            session.close()
             return df
-            
+
     @property
     def sessions(self) -> tuple[sessionmaker[Session], sessionmaker[Session]]:
         """
@@ -235,3 +264,96 @@ class Database:
         """
         self._user_engine.dispose()
         self._class_engine.dispose()
+
+    def update_classes(self, data: list[dict]):
+        """
+        Update the classes data in the database based on the provided data.
+
+        :param data: List of dictionaries containing the updated class information.
+        """
+        session = self._classSession()
+        try:
+            for class_info in data:
+                # Update or insert the subject
+                subject = session.query(Subject).filter_by(codigo=class_info["Código"]).first()
+                if not subject:
+                    subject = Subject(subject=class_info["Matéria"], codigo=class_info["Código"])
+                    session.add(subject)
+                    session.commit()
+
+                # Update or insert the class information
+                class_record = session.query(Class_info).filter_by(
+                    codigo=class_info["Código"],
+                    N_o=class_info["N_o"],
+                    ano_periodo=class_info["Ano-Período"],
+                    docente=class_info["Docente"],
+                    horario=class_info["Horário"]
+                ).first()
+
+                if class_record:
+                    # Update existing record
+                    class_record.vagas_ofertadas = class_info["Qtde Vagas Ofertadas"]
+                    class_record.vagas_ocupadas = class_info["Qtde Vagas Ocupadas"]
+                    class_record.vagas_disponiveis = class_info["Qtde Vagas Disponíveis"]
+                    class_record.local = class_info["Local"]
+                else:
+                    # Insert new record
+                    new_class = Class_info(
+                        codigo=class_info["Código"],
+                        N_o=class_info["N_o"],
+                        ano_periodo=class_info["Ano-Período"],
+                        docente=class_info["Docente"],
+                        horario=class_info["Horário"],
+                        vagas_ofertadas=class_info["Qtde Vagas Ofertadas"],
+                        vagas_ocupadas=class_info["Qtde Vagas Ocupadas"],
+                        vagas_disponiveis=class_info["Qtde Vagas Disponíveis"],
+                        local=class_info["Local"]
+                    )
+                    session.add(new_class)
+
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error updating classes: {e}")
+        finally:
+            session.close()
+
+    def get_watched_items(self) -> list[tuple[int, str]]:
+        """
+        Retrieve all watched items and their associated chat IDs.
+
+        Returns:
+            list[tuple[int, str]]: A list of tuples containing chat IDs and subject codes.
+        """
+        session = self._userSession()
+        try:
+            query = session.query(Item.chat_id, Item.item_data).all()
+            return [(chat_id, item_data) for chat_id, item_data in query]
+        except Exception as e:
+            print(f"Error retrieving watched items: {e}")
+            return []
+        finally:
+            session.close()
+
+    def remove_item(self, chat_id: int, subject_code: str) -> None:
+        """
+        Remove an item associated with a chat_id and subject_code from the database.
+
+        Args:
+            chat_id (int): The ID of the chat.
+            subject_code (str): The code of the subject to remove.
+        """
+        session = self._userSession()
+        try:
+            item = session.query(Item).join(Chat).filter(
+                Chat.chat_id == chat_id,
+                Item.item_data == subject_code
+            ).first()
+            if item:
+                session.delete(item)
+                session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error removing item: {e}")
+        finally:
+            session.close()
