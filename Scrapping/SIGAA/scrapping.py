@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.firefox.options import Options
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 import pandas as pd
 
@@ -12,7 +13,9 @@ from typing import Final, NoReturn
 
 class SIGAA_Scraper:
     def __init__(self):
-       self.driver: Final = webdriver.Firefox()
+        options = Options()
+        options.add_argument("--headless")
+        self.driver: Final = webdriver.Firefox(options=options)
         
     def access_portal(self):
         wait = WebDriverWait(self.driver, 15)
@@ -25,6 +28,7 @@ class SIGAA_Scraper:
             self._terminate()
         
     def access_classes(self):
+        print("Searching on SIGAA...")
         wait = WebDriverWait(self.driver, 10)
         try:
             # Handle the dropdown (wait max 10 seconds)
@@ -56,7 +60,6 @@ class SIGAA_Scraper:
     
     def update_classes_info(self, save_in_file=False) -> list[dict]:
         wait = WebDriverWait(self.driver, 20)
-        print("Searching on SIGAA...", end='')
         
         try:
             # Find all rows in the table body
@@ -111,9 +114,7 @@ class SIGAA_Scraper:
                     "Qtde Vagas Disponíveis": vagas_disponiveis,
                     "Local": local
                 })
-                count+=1
-                if count%10 == 0:
-                    print('.', end='')
+                
         print('\nDone!')
         
         if save_in_file:     
