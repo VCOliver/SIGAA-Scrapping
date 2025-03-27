@@ -103,10 +103,21 @@ class SIGAAMOS_bot:
         self.db.add_chat(chat_id)
         self.db.add_item(chat_id, subject_code)
     
+    def _remove_warning(self, chat_id: int, subject_code: str):
+        """
+        Remove a warning from the database.
+
+        :param chat_id: ID of the chat.
+        :param subject_code: Code of the subject to stop warnings for.
+        """
+        if not chat_id or not subject_code:
+            return
+        self.db.remove_item(chat_id, subject_code)
+
     async def _warn_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
         Handle the /warn command.
-        
+
         :param update: Update instance.
         :param context: Context instance.
         """
@@ -114,6 +125,21 @@ class SIGAAMOS_bot:
 
         chat_id = update.effective_chat.id
         query = ' '.join(context.args).upper().strip()
+
+        if query.startswith("STOP "):
+            subject_code = query[5:].strip()
+
+            # Check if subject_code matches the format of 3 or 4 letters followed by 4 numbers
+            if not re.match(r'^[A-Za-z]{3,4}\d{4}$', subject_code):
+                await update.message.reply_text(
+                    "O código da matéria deve estar no formato de 3 ou 4 letras seguidas de 4 números. "
+                    "Por exemplo: FCTE1234 ou FGA2345."
+                )
+                return
+
+            self._remove_warning(chat_id, subject_code)  # Remove the warning from the database
+            await update.message.reply_text(f"Você não será mais avisado sobre {subject_code}.")
+            return
 
         # Check if query matches the format of 3 or 4 letters followed by 4 numbers
         if not re.match(r'^[A-Za-z]{3,4}\d{4}$', query):

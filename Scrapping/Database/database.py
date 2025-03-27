@@ -334,3 +334,26 @@ class Database:
             return []
         finally:
             session.close()
+
+    def remove_item(self, chat_id: int, subject_code: str) -> None:
+        """
+        Remove an item associated with a chat_id and subject_code from the database.
+
+        Args:
+            chat_id (int): The ID of the chat.
+            subject_code (str): The code of the subject to remove.
+        """
+        session = self._userSession()
+        try:
+            item = session.query(Item).join(Chat).filter(
+                Chat.chat_id == chat_id,
+                Item.item_data == subject_code
+            ).first()
+            if item:
+                session.delete(item)
+                session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error removing item: {e}")
+        finally:
+            session.close()
