@@ -13,6 +13,7 @@ Este projeto é um bot do Telegram para gerenciar notificações do SIGAA. O bot
 - `Telegram/telegram_bot.py`: Contém a classe `SIGAAMOS_bot` que gerencia a interação com o Telegram.
 - `Database/database.py`: Contém a classe `Database` que gerencia a interação com o banco de dados SQLite.
 - `Scrapping/main.py`: Ponto de entrada principal para a aplicação do bot.
+- `install_geckodriver.sh`: Script para instalação rápida do GeckoDriver (Raspberry Pi)
 
 ## Instalação
 
@@ -38,6 +39,11 @@ Este projeto é um bot do Telegram para gerenciar notificações do SIGAA. O bot
     BOT_TOKEN=seu_token_do_telegram
     ```
 
+5. Installe o GeckoDriver:
+	```bash
+	sudo bash install_geckodriver.sh
+	```
+
 ## Uso
 
 1. Inicie o bot:
@@ -49,32 +55,5 @@ Este projeto é um bot do Telegram para gerenciar notificações do SIGAA. O bot
     - `/start`: Inicia a conversa com o bot.
     - `/search <matéria>`: Pesquisa por uma matéria específica.
     - `/warn <matéria>`: Configura um aviso para quando a matéria estiver disponível.
+	- `/warn stop <matéria>`: Remove o aviso da matéria
 
-## Estrutura do Banco de Dados
-
-O banco de dados SQLite contém duas tabelas principais:
-
-- **chats**: Armazena os IDs dos chats.
-    ```sql
-    CREATE TABLE IF NOT EXISTS chats (
-        chat_id INTEGER PRIMARY KEY
-    );
-    ```
-
-- **items**: Armazena os avisos configurados pelos usuários.
-    ```sql
-    CREATE TABLE IF NOT EXISTS items (
-        item_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        chat_id INTEGER NOT NULL,
-        item_data TEXT NOT NULL,
-        FOREIGN KEY (chat_id) REFERENCES chats (chat_id)
-    );
-    ```
-
-## Contribuição
-
-Contribuições são bem-vindas! Sinta-se à vontade para abrir issues e pull requests.
-
-## Licença
-
-Este projeto está licenciado sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
