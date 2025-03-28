@@ -56,15 +56,23 @@ class Database:
 
     def add_chat(self, chat_id):
         """
-        Add a chat to the chats table in the user database.
+        Add a chat to the chats table in the user database if it doesn't already exist.
         
         :param chat_id: ID of the chat to be added.
         """
         session = self._userSession()
-        chat = Chat(chat_id=chat_id)
-        session.add(chat)
-        session.commit()
-        session.close()
+        try:
+            # Check if the chat_id already exists
+            existing_chat = session.query(Chat).filter_by(chat_id=chat_id).first()
+            if not existing_chat:
+                chat = Chat(chat_id=chat_id)
+                session.add(chat)
+                session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error adding chat: {e}")
+        finally:
+            session.close()
 
     def add_item(self, chat_id, item_data):
         """

@@ -56,7 +56,7 @@ class App:
             try:
                 self.scrape()
                 self.__db.update_classes(self._data)
-                print(f"Database updated at {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+                print(f"Database updated at {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
                 loop.run_until_complete(self.bot._notify_users())  # Run the coroutine in the thread's event loop
             except Exception as e:
                 print(f"Scraper encountered an error: {e}")
@@ -64,7 +64,7 @@ class App:
                 self.__scraper.quit()
                 self.__scraper = SIGAA_Scraper()
             finally:
-                for _ in range(10 * 60):  # Sleep for 10 minutes in 1-second intervals
+                for _ in range(2 * 60):  # Sleep for 10 minutes in 1-second intervals
                     if self._stop_event.is_set():
                         break
                     time.sleep(1)

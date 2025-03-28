@@ -177,7 +177,7 @@ class SIGAAMOS_bot:
         """
         while True:
             await self._notify_users()
-            await sleep(60*10)  # Wait for 10 minutes
+            await sleep(2*60)  # Wait for 10 minutes
 
     def run(self):
         """Start the bot and begin polling for updates."""

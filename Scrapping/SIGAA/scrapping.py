@@ -115,7 +115,7 @@ class SIGAA_Scraper:
                     "Local": local
                 })
                 
-        print('\nDone!')
+        print('Done!')
         
         if save_in_file:     
             # Create the DataFrame
